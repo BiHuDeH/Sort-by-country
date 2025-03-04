@@ -19,7 +19,7 @@ class ProxyProcessor:
             ip_address = socket.gethostbyname(ip_address)
             response = requests.get(f'{self.geo_api_url}/{ip_address}', timeout=5)
             response.raise_for_status()
-            return response.text
+            return response.json().get('countryCode')
         except (socket.gaierror, requests.RequestException) as e:
             print(f"Error resolving {ip_address}: {e}")
             return None
@@ -69,7 +69,7 @@ class ProxyProcessor:
             response.raise_for_status()
             proxies = response.text.splitlines()
         except requests.RequestException as e:
-            print(f"Error fetching subscription: {e}")
+            print(f"Error fetching subscription {url}: {e}")
             return {}
 
         country_proxies = {country: [] for country in countries}
@@ -94,7 +94,6 @@ def main(subscription_urls: List[str], countries: str):
     processor = ProxyProcessor(geo_api_url)
     countries_list = [c.strip().upper() for c in countries.split(',') if c.strip()]
     
-    # Process multiple subscription URLs
     all_results = {}
     for url in subscription_urls:
         result = processor.process_subscription(url, countries_list)
@@ -103,7 +102,6 @@ def main(subscription_urls: List[str], countries: str):
                 all_results[country] = []
             all_results[country].extend(proxies)
     
-    # Write results
     for country, proxies in all_results.items():
         if proxies:
             with open(processor.output_dir / f"{country}.txt", 'w') as f:
