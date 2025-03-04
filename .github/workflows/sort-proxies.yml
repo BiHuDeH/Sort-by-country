@@ -2,8 +2,8 @@ name: Sort Proxies
 
 on:
   schedule:
-    - cron: '0 */5 * * *'  # Runs every 5 hours
-  workflow_dispatch:  # Allows manual triggering
+    - cron: '0 */4 * * *'  # Every 4 hours
+  workflow_dispatch:
     inputs:
       subscription_urls:
         description: 'Space-separated list of subscription URLs'
@@ -16,10 +16,10 @@ jobs:
   sort:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
           
@@ -44,5 +44,5 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add output/*
-          git commit -m "Update sorted proxy files - $(date -u)" || echo "No changes to commit"
+          git commit -m "Update sorted proxies - $(date -u +'%Y-%m-%d %H:%M UTC')" || echo "No changes"
           git push
