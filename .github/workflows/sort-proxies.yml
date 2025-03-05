@@ -33,11 +33,11 @@ jobs:
           SUBSCRIPTION_URLS: ${{ github.event.inputs.subscription_urls || secrets.SUBSCRIPTION_URLS }}
           COUNTRIES: ${{ github.event.inputs.countries || secrets.COUNTRIES }}
         run: |
-          if [ -z "`\(SUBSCRIPTION_URLS" ] || [ -z "\)`COUNTRIES" ]; then
-            echo "Error: Subscription URLs and countries must be provided via inputs or secrets"
-            exit 1
-          fi
-          python proxy_sorter.py "`\(SUBSCRIPTION_URLS" "\)`COUNTRIES"
+  if [ -z "$SUBSCRIPTION_URLS" ] || [ -z "$COUNTRIES" ]; then
+    echo "Error: Subscription URLs and countries must be provided via inputs or secrets"
+    exit 1
+  fi
+  python proxy_sorter.py "$SUBSCRIPTION_URLS" "$COUNTRIES"
           
       - name: Commit results
         run: |
