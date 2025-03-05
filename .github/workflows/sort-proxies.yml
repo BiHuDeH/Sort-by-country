@@ -1,0 +1,48 @@
+name: Sort Proxies
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+    inputs:
+      subscription_urls:
+        description: 'Space-separated list of subscription URLs'
+        required: false
+      countries:
+        description: 'Comma-separated list of country codes (e.g., US,IR,GB)'
+        required: false
+
+jobs:
+  sort:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+          
+      - name: Run proxy sorter
+        env:
+          SUBSCRIPTION_URLS: ${{ github.event.inputs.subscription_urls || secrets.SUBSCRIPTION_URLS }}
+          COUNTRIES: ${{ github.event.inputs.countries || secrets.COUNTRIES }}
+        run: |
+          if [ -z "$SUBSCRIPTION_URLS" ] || [ -z "$COUNTRIES" ]; then
+            echo "Error: Subscription URLs and countries must be provided via inputs or secrets"
+            exit 1
+          fi
+          python proxy_sorter.py "$SUBSCRIPTION_URLS" "$COUNTRIES"
+          
+      - name: Commit results
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add output/*
+          git commit -m "Update sorted proxies - $(date -u +'%Y-%m-%d %H:%M UTC')" || echo "No changes"
+          git push
