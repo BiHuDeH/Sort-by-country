@@ -19,7 +19,9 @@ class ProxyProcessor:
             ip_address = socket.gethostbyname(ip_address)
             response = requests.get(f'{self.geo_api_url}/{ip_address}', timeout=5)
             response.raise_for_status()
-            return response.json().get('countryCode')
+            country_code = response.json().get('countryCode')
+            print(f"Resolved {ip_address} to {country_code}")
+            return country_code
         except (socket.gaierror, requests.RequestException) as e:
             print(f"Error resolving {ip_address}: {e}")
             return None
@@ -45,7 +47,7 @@ class ProxyProcessor:
             encoded_str = base64.b64encode(json.dumps(proxy_json).encode('utf-8')).decode('utf-8')
             return f"vmess://{encoded_str}", country_code
         except Exception as e:
-            print(f"Error processing vmess: {e}")
+            print(f"Error processing vmess {proxy}: {e}")
             return None
 
     def process_vless(self, proxy: str) -> Optional[tuple[str, str]]:
@@ -60,7 +62,7 @@ class ProxyProcessor:
             processed_proxy = proxy.split('#')[0] + '#' + remarks
             return processed_proxy, country_code
         except Exception as e:
-            print(f"Error processing vless: {e}")
+            print(f"Error processing vless {proxy}: {e}")
             return None
 
     def process_subscription(self, url: str, countries: List[str]) -> Dict[str, List[str]]:
@@ -68,6 +70,7 @@ class ProxyProcessor:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             proxies = response.text.splitlines()
+            print(f"Fetched {len(proxies)} proxies from {url}")
         except requests.RequestException as e:
             print(f"Error fetching subscription {url}: {e}")
             return {}
@@ -82,17 +85,23 @@ class ProxyProcessor:
             elif proxy.startswith('vless://'):
                 result = self.process_vless(proxy)
             else:
+                print(f"Skipping invalid proxy: {proxy}")
                 continue
             if result:
                 proxy_str, country = result
                 if country in country_proxies:
                     country_proxies[country].append(proxy_str)
+                else:
+                    print(f"Proxy country {country} not in requested countries {countries}")
+        for country, proxies in country_proxies.items():
+            print(f"Country {country}: {len(proxies)} proxies")
         return country_proxies
 
 def main(subscription_urls: List[str], countries: str):
     geo_api_url = os.getenv('GET_IPGEO', 'http://ip-api.com/json')
     processor = ProxyProcessor(geo_api_url)
     countries_list = [c.strip().upper() for c in countries.split(',') if c.strip()]
+    print(f"Processing for countries: {countries_list}")
     
     all_results = {}
     for url in subscription_urls:
@@ -106,6 +115,9 @@ def main(subscription_urls: List[str], countries: str):
         if proxies:
             with open(processor.output_dir / f"{country}.txt", 'w') as f:
                 f.write('\n'.join(proxies) + '\n')
+            print(f"Wrote {len(proxies)} proxies to output/{country}.txt")
+        else:
+            print(f"No proxies written for {country}")
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
