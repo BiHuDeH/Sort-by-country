@@ -46,4 +46,3 @@ jobs:
           git add output/* || echo "No files to add"
           git commit -m "Update sorted proxies - $(date -u +'%Y-%m-%d %H:%M UTC')" || echo "No changes to commit"
           git push || echo "No push needed"
-```​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
